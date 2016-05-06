@@ -1,0 +1,16 @@
+{
+    "event": "get_local_temperature",
+    "url": "http://api.openweathermap.org/data/2.5/weather",
+    "requestType": "GET",
+    "headers": null,
+    "query": {
+        "q": "<CITY>,<COUNTRY>",
+        "appid": "<API KEY>",
+        "mode": "json",
+        "units": "metric"
+    },
+    "responseTemplate": "{{main.temp}}",
+    "json": null,
+    "auth": null,
+    "mydevices": true
+}

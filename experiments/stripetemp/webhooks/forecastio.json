@@ -1,0 +1,11 @@
+{
+    "event": "get_local_temperature",
+    "url": "https://api.forecast.io/forecast/<API KEY>/<LAT>,<LON>",
+    "requestType": "GET",
+    "headers": null,
+    "query": {"units": "si"},
+    "responseTemplate": "{{currently.temperature}}",
+    "json": null,
+    "auth": null,
+    "mydevices": true
+}
