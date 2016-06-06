@@ -1,22 +1,58 @@
+// Image uploading test
+// TCM-P441-230-v1.0 + Pervasive display 4,41"
+// Hardware SPI connected to the TCM interface
+// SS, /TC_BUSY, /TC_ENABLE connected as shown below
+
 #include <Arduino.h>
 #include <SPI.h>
 
 #include "test_pattern.h"
+
+#define SPI_SPEED           1E06
 
 #define MAX_CHUNK_SIZE      0xfa
 #define SS_PIN              10
 #define TC_BUSY_PIN         2
 #define TC_ENABLE_PIN       3
 
+#define SS_ASSERT_DELAY_US      10
+#define SS_DEASSERT_DELAY_US    10
+#define BUSY_WAIT_DELAY_US      50
+#define BUSY_RELEASE_DELAY_US   10
 
-SPISettings spiSettings(1000000, MSBFIRST, SPI_MODE3);
+#define EP_SW_NORMAL_PROCESSING             0x9000
+#define EP_SW_WRONG_LENGTH                  0x6700
+#define EP_SW_INVALID_LE                    0x6c00
+#define EP_SW_WRONG_PARAMETERS_P1P2         0x6a00
+#define EP_SW_INSTRUCTION_NOT_SUPPORTED     0x6d00
 
 
-uint8_t sendCommand(uint8_t ins, uint8_t p1, uint8_t p2, uint8_t len, uint8_t *data)
+SPISettings spiSettings(SPI_SPEED, MSBFIRST, SPI_MODE3);
+
+void startTransmission()
 {
     digitalWrite(SS_PIN, LOW);
-    delay(1);
+    delayMicroseconds(SS_ASSERT_DELAY_US);
     SPI.beginTransaction(spiSettings);
+}
+
+void endTransmission()
+{
+    SPI.endTransaction();
+    delayMicroseconds(SS_DEASSERT_DELAY_US);
+    digitalWrite(SS_PIN, HIGH);
+}
+
+void busyWait()
+{
+    delayMicroseconds(BUSY_WAIT_DELAY_US);
+    while(digitalRead(TC_BUSY_PIN) == LOW);
+    delayMicroseconds(BUSY_RELEASE_DELAY_US);
+}
+
+uint16_t sendCommand(uint8_t ins, uint8_t p1, uint8_t p2, uint8_t len, uint8_t *data)
+{
+    startTransmission();
     SPI.transfer(ins);
     SPI.transfer(p1);
     SPI.transfer(p2);
@@ -25,31 +61,18 @@ uint8_t sendCommand(uint8_t ins, uint8_t p1, uint8_t p2, uint8_t len, uint8_t *d
         SPI.transfer(len);
         SPI.transfer(data, len);
     }
-    SPI.endTransaction();
-    delay(1);
-    digitalWrite(SS_PIN, HIGH);
+    endTransmission();
+    busyWait();
 
-    delay(1);
-    while(digitalRead(TC_BUSY_PIN) == LOW);
-    delay(1);
-
-    digitalWrite(SS_PIN, LOW);
-    delay(1);
-    SPI.beginTransaction(spiSettings);
-    uint8_t rc = SPI.transfer(0x00);
-    SPI.transfer(0x00);
-    SPI.endTransaction();
-    delay(1);
-    digitalWrite(SS_PIN, HIGH);
-
-    delay(1);
-    while(digitalRead(TC_BUSY_PIN) == LOW);
-    delay(1);
+    startTransmission();
+    uint16_t rc = (SPI.transfer(0x00) << 8) | SPI.transfer(0x00);
+    endTransmission();
+    busyWait();
 
     return rc;
 }
 
-uint8_t sendCommand(uint8_t ins, uint8_t p1, uint8_t p2)
+uint16_t sendCommand(uint8_t ins, uint8_t p1, uint8_t p2)
 {
     return sendCommand(ins, p1, p2, 0, NULL);
 }
@@ -59,39 +82,57 @@ void setup()
     SPI.begin();
     Serial.begin(115200);
     pinMode(TC_ENABLE_PIN, OUTPUT);
+
+    Serial.println("Waking up TCM");
     digitalWrite(TC_ENABLE_PIN, LOW);
     delay(10);
 }
 
 void loop()
 {
-  const unsigned char *ptr = test_1bit;
-  uint8_t buffer[MAX_CHUNK_SIZE];
-  uint8_t chunkSize;
-  uint16_t cazzo = 0;
+    uint8_t buffer[MAX_CHUNK_SIZE];
+    uint8_t chunkSize;
+    uint16_t offset = 0;
+    uint16_t rc;
 
-  Serial.println(sendCommand(0x20, 0x0d, 0x00), HEX);
+    Serial.println("Resetting image data pointer");
 
-  while (cazzo < TOTAL_SIZE) {
-    chunkSize = min(TOTAL_SIZE - cazzo, MAX_CHUNK_SIZE);
+    rc = sendCommand(0x20, 0x0d, 0x00);
 
-    memcpy_P(buffer, ptr, chunkSize);
+    if (rc != EP_SW_NORMAL_PROCESSING) {
+        Serial.print("Error while refreshing screen err=");
+        Serial.println(rc, HEX);
+    } else {
+        Serial.println("Done.");
+    }
 
-    uint8_t rc = sendCommand(0x20, 0x01, 0x00, chunkSize, buffer);
+    while (offset < TOTAL_SIZE) {
+        chunkSize = min(TOTAL_SIZE - offset, MAX_CHUNK_SIZE);
 
-    ptr += chunkSize;
-    cazzo += chunkSize;
+        memcpy_P(buffer, &test_1bit[offset], chunkSize);
 
-    Serial.print(cazzo);
-    Serial.print(" ");
-    Serial.print(chunkSize);
-    Serial.print(" ");
-    Serial.println(rc, HEX);
- }
-  Serial.println("--");
+        rc = sendCommand(0x20, 0x01, 0x00, chunkSize, buffer);
 
-  Serial.println(sendCommand(0x24, 0x01, 0x00), HEX);
+        if (rc != EP_SW_NORMAL_PROCESSING) {
+            Serial.print("Error while sending packet offset=");
+            Serial.print(offset, HEX);
+            Serial.print(" err=");
+            Serial.print(rc, HEX);
+        }
+        offset += chunkSize;
+    }
+    Serial.println("Refreshing screen");
 
-  digitalWrite(TC_ENABLE_PIN, HIGH);
-  for(;;);
+    rc = sendCommand(0x24, 0x01, 0x00);
+
+    if (rc != EP_SW_NORMAL_PROCESSING) {
+        Serial.print("Error while refreshing screen err=");
+        Serial.println(rc, HEX);
+    } else {
+        Serial.println("Done.");
+    }
+
+    Serial.println("Putting TCM to sleep");
+    digitalWrite(TC_ENABLE_PIN, HIGH);
+    for(;;);
 }
