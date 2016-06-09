@@ -86,6 +86,7 @@ void setup()
     Serial.println("Waking up TCM");
     digitalWrite(TC_ENABLE_PIN, LOW);
     delay(10);
+    busyWait();
 }
 
 void loop()
@@ -100,7 +101,7 @@ void loop()
     rc = sendCommand(0x20, 0x0d, 0x00);
 
     if (rc != EP_SW_NORMAL_PROCESSING) {
-        Serial.print("Error while refreshing screen err=");
+        Serial.print("Error while resetting image pointer err=");
         Serial.println(rc, HEX);
     } else {
         Serial.println("Done.");
@@ -117,7 +118,7 @@ void loop()
             Serial.print("Error while sending packet offset=");
             Serial.print(offset, HEX);
             Serial.print(" err=");
-            Serial.print(rc, HEX);
+            Serial.println(rc, HEX);
         }
         offset += chunkSize;
     }
