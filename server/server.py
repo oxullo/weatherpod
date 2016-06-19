@@ -2,7 +2,7 @@
 
 '''
 Canvas dispatcher for the weatherpod unit
-Runs on a server and generates the bitmap, in EDP format, that the pod downloads and displays
+Runs on a server and generates the bitmap, in EPD format, that the pod downloads and displays
 '''
 
 from __future__ import print_function
@@ -14,14 +14,14 @@ from flask import Flask
 from flask import send_file
 import StringIO
 
-EDP_HEADER = [0x33, 0x01, 0x90, 0x01, 0x2C, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+EPD_HEADER = [0x33, 0x01, 0x90, 0x01, 0x2C, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
 
 app = Flask(__name__)
 
 def test_canvas():
     data = [0xaa] * 15000
     sio = StringIO.StringIO()
-    sio.write(''.join([chr(c) for c in EDP_HEADER + data]))
+    sio.write(''.join([chr(c) for c in EPD_HEADER + data]))
     sio.seek(0)
 
     return sio
@@ -46,9 +46,9 @@ def testbitmap():
     print('Image size:', im.size)
 
     sio = StringIO.StringIO()
-    sio.write(''.join([chr(c) for c in EDP_HEADER]))
+    sio.write(''.join([chr(c) for c in EPD_HEADER]))
 
-    # EDP pixel data format type 0
+    # EPD pixel data format type 0
     for stride in xrange(im.size[0] * im.size[1] / 8):
         x = (stride * 8) % im.size[0]
         y = (stride * 8) / im.size[0]
