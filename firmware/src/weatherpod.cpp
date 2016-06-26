@@ -18,6 +18,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 #include <WiFi101.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BME280.h>
+#include <Wire.h>
 
 #include "tcm2.h"
 
@@ -34,8 +37,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define STATE_HTTP_HEADER_LINES     2
 #define STATE_HTTP_BODY             3
 
-const char *ssid = "ssid";
-const char *pass = "psk";
+const char *ssid = "SSID";
+const char *pass = "PSK";
 //const char *server = "www.123.org";
 IPAddress server(192,168,20,13);
 
@@ -44,6 +47,24 @@ uint8_t connState = STATE_CONN_IDLE;
 uint8_t httpState = STATE_HTTP_INIT;
 
 TCM2 tcm;
+Adafruit_BME280 bme;
+
+void printWifiStatus() {
+    // print the SSID of the network you're attached to:
+    Serial.print("SSID: ");
+    Serial.println(WiFi.SSID());
+
+    // print your WiFi shield's IP address:
+    IPAddress ip = WiFi.localIP();
+    Serial.print("IP Address: ");
+    Serial.println(ip);
+
+    // print the received signal strength:
+    long rssi = WiFi.RSSI();
+    Serial.print("signal strength (RSSI):");
+    Serial.print(rssi);
+    Serial.println(" dBm");
+}
 
 
 void setup()
@@ -77,7 +98,17 @@ void setup()
     
     Serial.print("TCM2 getDeviceInfo(): ");
     Serial.println(buffer);
+    
+    bme.begin();
 
+    Serial.print("T=");
+    Serial.print(bme.readTemperature(), 2);
+    Serial.print("C P=");
+    Serial.print(bme.readPressure() / 100.0, 2);
+    Serial.print("Pa H=");
+    Serial.print(bme.readHumidity(), 2);
+    Serial.println("%");
+    
     pinMode(TRIGGER_IN_PIN, INPUT_PULLUP);
 }
 
@@ -189,19 +220,3 @@ void loop()
     }
 }
 
-void printWifiStatus() {
-    // print the SSID of the network you're attached to:
-    Serial.print("SSID: ");
-    Serial.println(WiFi.SSID());
-
-    // print your WiFi shield's IP address:
-    IPAddress ip = WiFi.localIP();
-    Serial.print("IP Address: ");
-    Serial.println(ip);
-
-    // print the received signal strength:
-    long rssi = WiFi.RSSI();
-    Serial.print("signal strength (RSSI):");
-    Serial.print(rssi);
-    Serial.println(" dBm");
-}
