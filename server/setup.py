@@ -31,7 +31,8 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'weatherpod-server = weatherpod.runner:main',
+            'weatherpod-server = weatherpod.runner:server',
+            'weatherpod-upload = weatherpod.runner:serial_upload'
         ],
     },
     zip_safe=False,

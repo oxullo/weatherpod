@@ -16,6 +16,7 @@ def test_canvas():
     return sio
 
 def convert(im):
+    assert im.size == (400, 300)
     sio = StringIO.StringIO()
     sio.write(''.join([chr(c) for c in EPD_HEADER]))
 
