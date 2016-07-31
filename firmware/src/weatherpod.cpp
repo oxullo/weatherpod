@@ -29,7 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define WIFI_PSK                "PSK"
 #define SERVER_HOST             "192.168.20.18"
 #define SERVER_PORT             5000
-#define SERVER_PATH             "/weatherpod/v1/testbitmap"
+#define SERVER_PATH             "/weatherpod/v1/simple"
 #define MY_AUTHID               "someid"
 
 

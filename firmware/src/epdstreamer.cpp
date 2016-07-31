@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "epdstreamer.h"
 
 #define RESPONSE_STATUS_CODE_VALID      200
-#define CONTENT_TYPE_VALID              "image/edp"
+#define CONTENT_TYPE_VALID              "image/epd"
 
 EPDStreamer::EPDStreamer() :
     connState(STATE_CONN_DISCONNECTED),
@@ -247,7 +247,7 @@ void EPDStreamer::update()
             client.stop();
             connState = STATE_CONN_DISCONNECTED;
 
-            if (callbacksEnabled && onStreamingCompletedCallback) {
+            if (httpState == STATE_HTTP_BODY && callbacksEnabled && onStreamingCompletedCallback) {
                 onStreamingCompletedCallback();
             }
         }
