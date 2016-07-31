@@ -19,12 +19,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "epdstreamer.h"
 
 #define RESPONSE_STATUS_CODE_VALID      200
+#define CONTENT_TYPE_VALID              "image/edp"
 
 EPDStreamer::EPDStreamer() :
     connState(STATE_CONN_DISCONNECTED),
     httpState(STATE_HTTP_INIT),
     bufferPtr(0),
-    responseStatusCode(0),
+    callbacksEnabled(true),
     onStreamingStartingCallback(0),
     onBodyByteReadCallback(0),
     onStreamingCompletedCallback(0)
@@ -67,24 +68,26 @@ void EPDStreamer::printWifiStatus()
     Serial.println("dBm");
 }
 
-void EPDStreamer::processLine(const char *line)
+void EPDStreamer::processBuffer()
 {
     switch (httpState) {
         case STATE_HTTP_HEADER_STATUS:
             {
                 Serial.print("STATUS=");
-                Serial.println(line);
+                Serial.println(buffer);
 
-                char temp[64];
-                strcpy(temp, line);
-
-                strtok(temp, " ");  // protocol version chunk (discard)
+                strtok(buffer, " ");  // protocol version chunk (discard)
                 char *statusCode = strtok(0, " ");
 
                 if (statusCode) {
-                    responseStatusCode = atoi(statusCode);
-                    Serial.print("Response status code: ");
-                    Serial.println(responseStatusCode);
+                    uint16_t responseStatusCode = atoi(statusCode);
+
+                    if (responseStatusCode != RESPONSE_STATUS_CODE_VALID) {
+                        Serial.println("Warning: invalid response status code: disabling callbacks");
+                        callbacksEnabled = false;
+                    } else {
+                        Serial.println("Valid response status code");
+                    }
                 } else {
                     Serial.println("Error: cannot parse response status code");
                 }
@@ -94,22 +97,40 @@ void EPDStreamer::processLine(const char *line)
             }
 
         case STATE_HTTP_HEADER_LINES:
-            if (line[0] == 0) {
+            if (strlen(buffer) == 0) {
                 httpState = STATE_HTTP_BODY;
-                if (responseStatusCode != RESPONSE_STATUS_CODE_VALID) {
-                    Serial.println("Warning: invalid response status code: disabling callbacks");
-                } else if (onStreamingStartingCallback) {
+                if (callbacksEnabled && onStreamingStartingCallback) {
                     onStreamingStartingCallback();
                 }
             } else {
                 Serial.print("HDR=");
-                Serial.println(line);
+                Serial.println(buffer);
+
+                char *key = strtok(buffer, ":");
+                char *value = strtok(0, "");
+
+                // Get rid of the trailing space if a valid key/value pair is found
+                if (value && strlen(value) > 0) {
+                    ++value;
+                }
+
+                if (strcasecmp(key, "content-type") == 0) {
+                    if (strcasecmp(value, CONTENT_TYPE_VALID) != 0) {
+                        Serial.print("Invalid content type ");
+                        Serial.print(value);
+                        Serial.println(": disabling callbacks");
+
+                        callbacksEnabled = false;
+                    } else {
+                        Serial.println("Valid content type");
+                    }
+                }
             }
             break;
 
         case STATE_HTTP_BODY:
         case STATE_HTTP_INIT:
-            Serial.println("processLine() called with unexpected http state");
+            Serial.println("processBuffer() called with unexpected http state");
             break;
     }
 }
@@ -120,7 +141,7 @@ bool EPDStreamer::connect(const char *host, uint16_t port)
         return false;
     }
 
-    responseStatusCode = 0;
+    callbacksEnabled = true;
 
     IPAddress ip;
 
@@ -204,7 +225,7 @@ void EPDStreamer::update()
             char c = client.read();
 
             if (httpState == STATE_HTTP_BODY) {
-                if (responseStatusCode == RESPONSE_STATUS_CODE_VALID && onBodyByteReadCallback) {
+                if (callbacksEnabled && onBodyByteReadCallback) {
                     onBodyByteReadCallback(c);
                 }
             } else {
@@ -212,7 +233,7 @@ void EPDStreamer::update()
                     continue;
                 } else if (c == 10) {
                     buffer[bufferPtr] = 0;
-                    processLine(buffer);
+                    processBuffer();
                     bufferPtr = 0;
                 } else {
                     buffer[bufferPtr++] = c;
@@ -226,7 +247,7 @@ void EPDStreamer::update()
             client.stop();
             connState = STATE_CONN_DISCONNECTED;
 
-            if (responseStatusCode == RESPONSE_STATUS_CODE_VALID && onStreamingCompletedCallback) {
+            if (callbacksEnabled && onStreamingCompletedCallback) {
                 onStreamingCompletedCallback();
             }
         }

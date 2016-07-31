@@ -54,9 +54,9 @@ private:
     HTTPState httpState;
     char buffer[MAX_BUFFER_LENGTH];
     uint8_t bufferPtr;
-    uint16_t responseStatusCode;
+    bool callbacksEnabled;
 
-    void processLine(const char *line);
+    void processBuffer();
 
     void (*onStreamingStartingCallback)(void);
     void (*onBodyByteReadCallback)(char);
