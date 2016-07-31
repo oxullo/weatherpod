@@ -21,8 +21,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "tcm2.h"
 #include "localsensor.h"
 
-#define DEBUG
-
 #define TRIGGER_IN_PIN          5
 
 #define WIFI_SSID               "SSID"
