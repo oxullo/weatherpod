@@ -42,10 +42,12 @@ uint8_t bufferPtr = 0;
 
 void processBodyChunk(const char *buffer, uint8_t length)
 {
+    #ifdef DEBUG
     Serial.print("uploading ");
     Serial.print(length);
     Serial.print("B buffer[0]=0x");
     Serial.println(buffer[0], HEX);
+    #endif
 
     tcm.uploadImageData(buffer, length);
 }
@@ -53,6 +55,7 @@ void processBodyChunk(const char *buffer, uint8_t length)
 void onStreamingStarting()
 {
     tcm.resetDataPointer();
+    Serial.println("Preparing for TCM image upload");
 }
 
 void onBodyByteRead(char c)
@@ -69,6 +72,7 @@ void onStreamingCompleted()
     processBodyChunk(buffer, bufferPtr);
     bufferPtr = 0;
 
+    Serial.println("TCM upload terminated, refreshing screen");
     tcm.displayUpdate();
 }
 
