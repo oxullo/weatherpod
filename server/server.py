@@ -12,6 +12,7 @@ from PIL import Image
 
 from flask import Flask
 from flask import send_file
+from flask import request
 import StringIO
 
 EPD_HEADER = [0x33, 0x01, 0x90, 0x01, 0x2C, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
@@ -31,8 +32,9 @@ def test_canvas():
 def request_canvas():
     return send_file(test_canvas(), mimetype='image/edp')
 
-@app.route('/weatherpod/v1/testbitmap')
+@app.route('/weatherpod/v1/testbitmap', methods=['GET', 'POST'])
 def testbitmap():
+    print(request.values)
     r = requests.get('http://lorempixel.com/g/400/300/', stream=True)
     if r.status_code == 200:
         with open('out.jpg', 'wb') as f:

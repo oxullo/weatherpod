@@ -17,12 +17,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BME280.h>
-#include <Wire.h>
-
 #include "epdstreamer.h"
 #include "tcm2.h"
+#include "localsensor.h"
 
 #define DEBUG
 
@@ -33,11 +30,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define SERVER_HOST             "192.168.20.18"
 #define SERVER_PORT             5000
 #define SERVER_PATH             "/weatherpod/v1/testbitmap"
+#define MY_AUTHID               "someid"
 
 
 EPDStreamer epdStreamer;
 TCM2 tcm;
-Adafruit_BME280 bme;
+LocalSensor localSensor;
 
 char buffer[MAX_CHUNK_SIZE];
 uint8_t bufferPtr = 0;
@@ -94,15 +92,11 @@ void setup()
     Serial.print("TCM2 getDeviceInfo(): ");
     Serial.println(buffer);
 
-    bme.begin();
+    localSensor.begin();
+    localSensor.printData();
 
-    Serial.print("T=");
-    Serial.print(bme.readTemperature(), 2);
-    Serial.print("C P=");
-    Serial.print(bme.readPressure() / 100.0, 2);
-    Serial.print("Pa H=");
-    Serial.print(bme.readHumidity(), 2);
-    Serial.println("%");
+    localSensor.getDataAsPostPayload(buffer);
+    Serial.println(buffer);
 
     pinMode(TRIGGER_IN_PIN, INPUT_PULLUP);
 }
@@ -110,7 +104,13 @@ void setup()
 void loop()
 {
     epdStreamer.update();
+
     if (digitalRead(TRIGGER_IN_PIN) == LOW) {
-        epdStreamer.connect(SERVER_HOST, SERVER_PORT, SERVER_PATH);
+        if (epdStreamer.connect(SERVER_HOST, SERVER_PORT)) {
+            char buffer[64];
+            localSensor.getDataAsPostPayload(buffer);
+            strcat(buffer, "&id=" MY_AUTHID);
+            epdStreamer.post(SERVER_HOST, SERVER_PATH, buffer);
+        }
     }
 }
