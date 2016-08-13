@@ -42,10 +42,22 @@ class Server(object):
         forecast_instance = forecast.Forecast(self._config)
         current = forecast_instance.retrieve().currently()
 
-        return self._send_image(self._renderer.forecast(current))
+        local_data = {'t': self._fetch_number('t'),
+                      'p': self._fetch_number('p'),
+                      'h': self._fetch_number('h')}
+
+        return self._send_image(self._renderer.forecast(current, local_data))
 
     def _get_format(self):
         return self.FORMAT_GFX if request.values.get('fmt') == 'gfx' else self.FORMAT_EPD
+
+    def _fetch_number(self, tag):
+        value = request.values.get(tag)
+
+        if value is None:
+            return None
+        else:
+            return int(float(value))
 
     def _stream_image(self, im):
         sio = StringIO.StringIO()
