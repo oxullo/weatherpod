@@ -17,28 +17,33 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 
+#include <TCM2.h>
 #include "epdstreamer.h"
-#include "tcm2.h"
 #include "localsensor.h"
 
 #define TRIGGER_IN_PIN          5
 
 #define WIFI_SSID               "SSID"
 #define WIFI_PSK                "PSK"
-#define SERVER_HOST             "192.168.20.18"
+#define SERVER_HOST             "192.168.20.22"
 #define SERVER_PORT             5000
-#define SERVER_PATH             "/weatherpod/v1/simple"
+#define SERVER_PATH             "/v1/forecast"
 #define MY_AUTHID               "someid"
 
 
+#define TCM2_BUSY_PIN       2
+#define TCM2_ENABLE_PIN     3
+#define TCM2_SPI_CS         7
+
+
+TCM2 tcm(TCM2_BUSY_PIN, TCM2_ENABLE_PIN, TCM2_SPI_CS);
 EPDStreamer epdStreamer;
-TCM2 tcm;
 LocalSensor localSensor;
 
-char buffer[MAX_CHUNK_SIZE];
+uint8_t buffer[TCM2_MAX_CHUNK_SIZE];
 uint8_t bufferPtr = 0;
 
-void processBodyChunk(const char *buffer, uint8_t length)
+void processBodyChunk(const uint8_t *buffer, uint8_t length)
 {
     #ifdef DEBUG
     Serial.print("uploading ");
@@ -59,7 +64,7 @@ void onStreamingStarting()
 void onBodyByteRead(char c)
 {
     buffer[bufferPtr++] = c;
-    if (bufferPtr == MAX_CHUNK_SIZE) {
+    if (bufferPtr == TCM2_MAX_CHUNK_SIZE) {
         processBodyChunk(buffer, bufferPtr);
         bufferPtr = 0;
     }
@@ -89,7 +94,7 @@ void setup()
     tcm.begin();
 
     char buffer[24];
-    tcm.getDeviceInfo(buffer);
+    tcm.getDeviceInfo((uint8_t *)buffer);
 
     Serial.print("TCM2 getDeviceInfo(): ");
     Serial.println(buffer);
