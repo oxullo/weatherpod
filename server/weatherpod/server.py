@@ -3,57 +3,61 @@
 
 from __future__ import print_function
 
+import logging
+import StringIO
 
 from flask import Flask, send_file, request
-
-import StringIO
 
 import forecast
 import renderer
 import epd
 
-app = Flask(__name__)
-app.config.from_object('weatherpod.default_settings')
-app.config.from_envvar('WEATHERPOD_SETTINGS')
+logger = logging.getLogger(__name__)
 
 
-def stream_image(im):
-    sio = StringIO.StringIO()
-    im.save(sio, 'PNG')
-    sio.seek(0)
+class Server(object):
+    FORMAT_GFX = 0
+    FORMAT_EPD = 1
 
-    return sio
+    def __init__(self, config):
+        self._config = config
+        self._app = Flask(__name__)
+        self._renderer = renderer.Renderer(config)
+        self._app.add_url_rule('/v1/test/bitmap', view_func=self._test_bitmap)
+        self._app.add_url_rule('/v1/test/text', view_func=self._test_text)
+        self._app.add_url_rule('/v1/forecast', view_func=self._forecast, methods=['GET', 'POST'])
 
-@app.route('/weatherpod/v1/testpattern')
-def request_canvas():
-    return send_file(epd.test_canvas(), mimetype='image/epd')
+    def run(self):
+        self._app.run(host=self._config.get('server', 'listen_address'),
+                      port=self._config.getint('server', 'listen_port'),
+                      use_reloader=self._config.getboolean('server', 'use_reloader'))
 
-@app.route('/weatherpod/v1/testbitmap')
-def testbitmap():
-    im = renderer.randompic()
+    def _test_bitmap(self):
+        return self._send_image(self._renderer.test_bitmap())
 
-    sio = epd.convert(im)
+    def _test_text(self):
+        return self._send_image(self._renderer.test_text())
 
-    return send_file(sio, mimetype='image/epd')
+    def _forecast(self):
+        forecast_instance = forecast.Forecast(self._config)
+        current = forecast_instance.retrieve().currently()
 
-@app.route('/weatherpod/v1/simple', methods=['GET', 'POST'])
-def simple():
-    print(request.form)
-    forecast_instance = forecast.Forecast(app.config.get_namespace('FORECAST_'))
-    current_forecast = forecast_instance.retrieve().currently()
+        return self._send_image(self._renderer.forecast(current))
 
-    renderer_instance = renderer.Renderer(app.config.get_namespace('RENDERER_'))
-    im = renderer_instance.simple(current_forecast)
+    def _get_format(self):
+        return self.FORMAT_GFX if request.values.get('fmt') == 'gfx' else self.FORMAT_EPD
 
-    fmt = request.args.get('format')
+    def _stream_image(self, im):
+        sio = StringIO.StringIO()
+        im.save(sio, 'PNG')
+        sio.seek(0)
 
-    if fmt == 'png':
-        sio = stream_image(im)
-        return send_file(sio, mimetype='image/png')
-    else:
-        sio = epd.convert(im)
-        return send_file(sio, mimetype='image/epd')
+        return sio
 
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', use_reloader=True)
+    def _send_image(self, im):
+        if self._get_format() == self.FORMAT_EPD:
+            sio = epd.convert(im)
+            return send_file(sio, mimetype='image/epd')
+        else:
+            sio = self._stream_image(im)
+            return send_file(sio, mimetype='image/png')

@@ -3,19 +3,33 @@
 
 from __future__ import print_function
 
+import sys
 import os
 import argparse
+import ConfigParser
+import logging
+
+logger = logging.getLogger(__name__)
 
 def server():
     parser = argparse.ArgumentParser()
     parser.add_argument('config')
+    parser.add_argument('--debug', '-d', action='store_true')
 
     args = parser.parse_args()
 
-    os.environ['WEATHERPOD_SETTINGS'] = os.path.abspath(args.config)
+    logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
+
+    if not os.path.exists(args.config):
+        logger.error('Cannot find config file %s' % args.config)
+        sys.exit(1)
+
+    config = ConfigParser.ConfigParser()
+    config.read(args.config)
 
     import server
-    server.app.run(host='0.0.0.0', use_reloader=True)
+    server_instance = server.Server(config)
+    server_instance.run()
 
 def serial_upload():
     parser = argparse.ArgumentParser()
