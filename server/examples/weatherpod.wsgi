@@ -1,7 +1,7 @@
 
 import os
 import ConfigParser
-import server
+import weatherpod.server
 
 CONFIG_FILE = '/path/to/config.ini'
 VIRTUALENV_PATH = '/path/to/venv'
@@ -12,4 +12,4 @@ execfile(activate_this, dict(__file__=activate_this))
 config = ConfigParser.ConfigParser()
 config.read(CONFIG_FILE)
 
-application = server.Server(config).get_app()
+application = weatherpod.server.Server(config).get_app()
