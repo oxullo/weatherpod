@@ -29,6 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define SERVER_PORT             5000
 #define SERVER_PATH             "/v1/forecast"
 #define MY_AUTHID               "someid"
+#define POLL_PERIOD             120
 
 
 #define TCM2_BUSY_PIN       2
@@ -40,6 +41,7 @@ TCM2 tcm(TCM2_BUSY_PIN, TCM2_ENABLE_PIN, TCM2_SPI_CS);
 EPDStreamer epdStreamer;
 LocalSensor localSensor;
 
+uint32_t tsNextPoll = 0;
 uint8_t buffer[TCM2_MAX_CHUNK_SIZE];
 uint8_t bufferPtr = 0;
 
@@ -112,12 +114,13 @@ void loop()
 {
     epdStreamer.update();
 
-    if (digitalRead(TRIGGER_IN_PIN) == LOW) {
+    if (digitalRead(TRIGGER_IN_PIN) == LOW || millis() > tsNextPoll) {
         if (epdStreamer.connect(SERVER_HOST, SERVER_PORT)) {
             char buffer[64];
             localSensor.getDataAsPostPayload(buffer);
             strcat(buffer, "&id=" MY_AUTHID);
             epdStreamer.post(SERVER_HOST, SERVER_PATH, buffer);
         }
+        tsNextPoll = millis() + POLL_PERIOD * 1000;
     }
 }
