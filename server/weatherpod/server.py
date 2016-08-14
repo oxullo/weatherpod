@@ -6,7 +6,7 @@ from __future__ import print_function
 import logging
 import StringIO
 
-from flask import Flask, send_file, request
+from flask import Flask, send_file, request, abort
 
 import forecast
 import renderer
@@ -21,6 +21,8 @@ class Server(object):
 
     def __init__(self, config):
         self._config = config
+        self._allowed_ids = config.get('server', 'allowed_ids').split(',')
+
         self._app = Flask(__name__)
         self._renderer = renderer.Renderer(config)
         self._app.add_url_rule('/v1/test/bitmap', view_func=self._test_bitmap)
@@ -42,6 +44,8 @@ class Server(object):
         return self._send_image(self._renderer.test_text())
 
     def _forecast(self):
+        self._check_authid()
+
         forecast_instance = forecast.Forecast(self._config)
         current = forecast_instance.retrieve().currently()
 
@@ -76,3 +80,7 @@ class Server(object):
         else:
             sio = self._stream_image(im)
             return send_file(sio, mimetype='image/png')
+
+    def _check_authid(self):
+        if 'id' not in request.values or request.values['id'] not in self._allowed_ids:
+            abort(403)
