@@ -15,6 +15,7 @@ class Renderer(object):
         self._font = resolve_data_dir(config.get('renderer', 'font'))
         self._icons_path = resolve_data_dir(config.get('renderer', 'icons_path'))
         self._template = resolve_data_dir(config.get('renderer', 'template'))
+        self._test_bitmap = resolve_data_dir(config.get('renderer', 'test_bitmap'))
 
     def forecast(self, forecast_data, local_data):
         im = Image.open(self._template)
@@ -51,7 +52,7 @@ class Renderer(object):
         return im
 
     def test_bitmap(self):
-        im = Image.open(resolve_data_dir('tests/test-image2.png'))
+        im = Image.open(self._test_bitmap)
 
         return im.convert('1')
 
