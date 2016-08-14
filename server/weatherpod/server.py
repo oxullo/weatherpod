@@ -32,6 +32,9 @@ class Server(object):
                       port=self._config.getint('server', 'listen_port'),
                       use_reloader=self._config.getboolean('server', 'use_reloader'))
 
+    def get_app(self):
+        return self._app
+
     def _test_bitmap(self):
         return self._send_image(self._renderer.test_bitmap())
 
