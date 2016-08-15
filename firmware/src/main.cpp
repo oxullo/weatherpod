@@ -20,17 +20,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <TCM2.h>
 #include "epdstreamer.h"
 #include "localsensor.h"
+#include "config.h"
 
 #define TRIGGER_IN_PIN          5
-
-#define WIFI_SSID               "SSID"
-#define WIFI_PSK                "PSK"
-#define SERVER_HOST             "192.168.20.22"
-#define SERVER_PORT             5000
-#define SERVER_PATH             "/v1/forecast"
-#define MY_AUTHID               "someid"
-#define POLL_PERIOD             120
-
 
 #define TCM2_BUSY_PIN       2
 #define TCM2_ENABLE_PIN     3
