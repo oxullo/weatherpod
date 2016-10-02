@@ -39,12 +39,9 @@ typedef enum HTTPState {
 class EPDStreamer {
 public:
     EPDStreamer();
-    void begin(const char *wifiSsid, const char *wifiPsk);
-    void printWifiStatus();
     bool connect(const char *host, uint16_t port);
     void get(const char *host, const char *path);
     void post(const char *host, const char *path, const char *data);
-    void update();
     void setCallbacks(void (*onStreamingStartingCallback)(void), void (*onBodyByteRead)(char),
             void (*onStreamingCompleted)(void));
 
@@ -56,6 +53,7 @@ private:
     uint8_t bufferPtr;
     bool callbacksEnabled;
 
+    void processResponse();
     void processBuffer();
 
     void (*onStreamingStartingCallback)(void);

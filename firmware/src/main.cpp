@@ -18,6 +18,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 #include <TCM2.h>
+
+#include "wifimanager.h"
 #include "epdstreamer.h"
 #include "localsensor.h"
 #include "config.h"
@@ -29,6 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define TCM2_SPI_CS         7
 
 
+WiFiManager wifiManager;
 TCM2 tcm(TCM2_BUSY_PIN, TCM2_ENABLE_PIN, TCM2_SPI_CS);
 EPDStreamer epdStreamer;
 LocalSensor localSensor;
@@ -36,6 +39,7 @@ LocalSensor localSensor;
 uint32_t tsNextPoll = 0;
 uint8_t buffer[TCM2_MAX_CHUNK_SIZE];
 uint8_t bufferPtr = 0;
+uint16_t totalBodySize = 0;
 
 void processBodyChunk(const uint8_t *buffer, uint8_t length)
 {
@@ -58,6 +62,8 @@ void onStreamingStarting()
 void onBodyByteRead(char c)
 {
     buffer[bufferPtr++] = c;
+    ++totalBodySize;
+
     if (bufferPtr == TCM2_MAX_CHUNK_SIZE) {
         processBodyChunk(buffer, bufferPtr);
         bufferPtr = 0;
@@ -69,8 +75,24 @@ void onStreamingCompleted()
     processBodyChunk(buffer, bufferPtr);
     bufferPtr = 0;
 
+    Serial.print("Downloaded ");
+    Serial.print(totalBodySize);
+    Serial.println("B");
+
+    totalBodySize = 0;
+
     Serial.println("TCM upload terminated, refreshing screen");
     tcm.displayUpdate();
+}
+
+void triggerUpdateRequest()
+{
+    if (epdStreamer.connect(SERVER_HOST, SERVER_PORT)) {
+        char buffer[64];
+        localSensor.getDataAsPostPayload(buffer);
+        strcat(buffer, "&id=" MY_AUTHID);
+        epdStreamer.post(SERVER_HOST, SERVER_PATH, buffer);
+    }
 }
 
 void setup()
@@ -82,7 +104,7 @@ void setup()
     while (!Serial);
     #endif
 
-    epdStreamer.begin(WIFI_SSID, WIFI_PSK);
+    wifiManager.setup(WIFI_SSID, WIFI_PSK);
     epdStreamer.setCallbacks(onStreamingStarting, onBodyByteRead, onStreamingCompleted);
 
     tcm.begin();
@@ -104,8 +126,6 @@ void setup()
 
 void loop()
 {
-    epdStreamer.update();
-
     if (digitalRead(TRIGGER_IN_PIN) == LOW || millis() > tsNextPoll) {
         if (epdStreamer.connect(SERVER_HOST, SERVER_PORT)) {
             char buffer[64];

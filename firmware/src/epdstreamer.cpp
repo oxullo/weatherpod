@@ -32,42 +32,6 @@ EPDStreamer::EPDStreamer() :
 {
 }
 
-void EPDStreamer::begin(const char *wifiSsid, const char *wifiPsk)
-{
-    // check for the presence of the shield
-    if (WiFi.status() == WL_NO_SHIELD) {
-        Serial.println("WiFi shield not present");
-        // don't continue:
-        while (true);
-    }
-
-    Serial.print("Attempting to connect to SSID: ");
-    Serial.println(wifiSsid);
-    // attempt to connect to Wifi network:
-    while (WiFi.begin(wifiSsid, wifiPsk) != WL_CONNECTED) {
-        Serial.println("Connection failed, trying again in 5s");
-        delay(5000);
-    }
-    Serial.println("Connected to wifi");
-    printWifiStatus();
-}
-
-void EPDStreamer::printWifiStatus()
-{
-    // print the SSID of the network you're attached to:
-    Serial.print("SSID: ");
-    Serial.println(WiFi.SSID());
-
-    // print your WiFi shield's IP address:
-    Serial.print("Local IP Address: ");
-    Serial.println((IPAddress)WiFi.localIP());
-
-    // print the received signal strength:
-    Serial.print("Signal strength:");
-    Serial.print(WiFi.RSSI());
-    Serial.println("dBm");
-}
-
 void EPDStreamer::processBuffer()
 {
     switch (httpState) {
@@ -205,7 +169,7 @@ void EPDStreamer::post(const char *host, const char *path, const char *data)
 
     client.print("POST ");
     client.print(path);
-    client.println(" HTTP/1.1");
+    client.println(" HTTP/1.0");
     client.print("Host: ");
     client.println(host);
     client.println("Connection: close");
@@ -216,11 +180,13 @@ void EPDStreamer::post(const char *host, const char *path, const char *data)
     client.print(data);
 
     httpState = STATE_HTTP_HEADER_STATUS;
+
+    processResponse();
 }
 
-void EPDStreamer::update()
+void EPDStreamer::processResponse()
 {
-    if (connState == STATE_CONN_CONNECTED) {
+    while (connState == STATE_CONN_CONNECTED) {
         while (client.available()) {
             char c = client.read();
 
