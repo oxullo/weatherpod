@@ -104,7 +104,6 @@ void setup()
     while (!Serial);
     #endif
 
-    wifiManager.setup(WIFI_SSID, WIFI_PSK);
     epdStreamer.setCallbacks(onStreamingStarting, onBodyByteRead, onStreamingCompleted);
 
     tcm.begin();
@@ -127,12 +126,16 @@ void setup()
 void loop()
 {
     if (digitalRead(TRIGGER_IN_PIN) == LOW || millis() > tsNextPoll) {
+        wifiManager.connect(WIFI_SSID, WIFI_PSK);
+
         if (epdStreamer.connect(SERVER_HOST, SERVER_PORT)) {
             char buffer[64];
             localSensor.getDataAsPostPayload(buffer);
             strcat(buffer, "&id=" MY_AUTHID);
             epdStreamer.post(SERVER_HOST, SERVER_PATH, buffer);
         }
+
+        wifiManager.disconnect();
         tsNextPoll = millis() + POLL_PERIOD * 1000;
     }
 }

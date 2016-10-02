@@ -25,7 +25,8 @@ class WiFiManager {
 public:
     WiFiManager();
 
-    void setup(const char *wifiSsid, const char *wifiPsk);
+    void connect(const char *wifiSsid, const char *wifiPsk);
+    void disconnect();
     void printStatus();
 
 };

@@ -208,7 +208,6 @@ void EPDStreamer::processResponse()
         }
 
         if (!client.connected()) {
-            Serial.println();
             Serial.println("The client has disconnected");
             client.stop();
             connState = STATE_CONN_DISCONNECTED;

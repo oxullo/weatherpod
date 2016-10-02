@@ -23,7 +23,7 @@ WiFiManager::WiFiManager()
 
 }
 
-void WiFiManager::setup(const char *wifiSsid, const char *wifiPsk)
+void WiFiManager::connect(const char *wifiSsid, const char *wifiPsk)
 {
     // check for the presence of the shield
     if (WiFi.status() == WL_NO_SHIELD) {
@@ -41,6 +41,12 @@ void WiFiManager::setup(const char *wifiSsid, const char *wifiPsk)
     }
     Serial.println("Connected to wifi");
     printStatus();
+    delay(1000);
+}
+
+void WiFiManager::disconnect()
+{
+    WiFi.disconnect();
 }
 
 void WiFiManager::printStatus()
