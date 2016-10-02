@@ -14,6 +14,10 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+Parts of the following code come from the Arduino library RTCZero
+https://github.com/arduino-libraries/RTCZero
+
 */
 
 #ifndef MKRPM_H

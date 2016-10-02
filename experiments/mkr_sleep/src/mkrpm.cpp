@@ -14,6 +14,10 @@
 
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+   Parts of the following code come from the Arduino library RTCZero
+   https://github.com/arduino-libraries/RTCZero
+
  */
 
 #include <stdint.h>
@@ -34,20 +38,6 @@ void MkrPM::begin()
     uint16_t tmp_reg = 0;
 
     PM->APBAMASK.reg |= PM_APBAMASK_RTC; // turn on digital interface clock
-    // config32kOSC();
-
-    // If the RTC is in clock mode and the reset was
-    // not due to POR or BOD, preserve the clock time
-    // POR causes a reset anyway, BOD behaviour is?
-    bool validTime = false;
-    RTC_MODE2_CLOCK_Type oldTime;
-
-    if ((PM->RCAUSE.reg & (PM_RCAUSE_SYST | PM_RCAUSE_WDT | PM_RCAUSE_EXT))) {
-        if (RTC->MODE2.CTRL.reg & RTC_MODE2_CTRL_MODE_CLOCK) {
-            validTime = true;
-            oldTime.reg = RTC->MODE2.CLOCK.reg;
-        }
-    }
 
     // Setup clock GCLK2 with OSC32K divided by 32
     GCLK->GENDIV.reg = GCLK_GENDIV_ID(2)|GCLK_GENDIV_DIV(4);
@@ -66,15 +56,11 @@ void MkrPM::begin()
     while (GCLK->STATUS.bit.SYNCBUSY);
 
     RTCdisable();
-
     RTCreset();
 
     tmp_reg |= RTC_MODE2_CTRL_MODE_CLOCK; // set clock operating mode
     tmp_reg |= RTC_MODE2_CTRL_PRESCALER_DIV1024; // set prescaler to 1024 for MODE2
     tmp_reg &= ~RTC_MODE2_CTRL_MATCHCLR; // disable clear on match
-
-    //According to the datasheet RTC_MODE2_CTRL_CLKREP = 0 for 24h
-    tmp_reg &= ~RTC_MODE2_CTRL_CLKREP; // 24h time representation
 
     RTC->MODE2.READREQ.reg &= ~RTC_READREQ_RCONT; // disable continuously mode
 
@@ -91,12 +77,6 @@ void MkrPM::begin()
 
     RTCenable();
     RTCresetRemove();
-
-    // If desired and valid, restore the time value
-    if (validTime) {
-        RTC->MODE2.CLOCK.reg = oldTime.reg;
-        while (RTCisSyncing());
-    }
 }
 
 void MkrPM::sleepForMinutes(uint8_t minutes)
@@ -121,10 +101,9 @@ void MkrPM::sleepForMinutes(uint8_t minutes)
 
     RTC->MODE2.Mode2Alarm[0].MASK.bit.SEL = 0x00;
     while (RTCisSyncing());
-    // RTC->MODE2.Mode2Alarm[0].MASK.bit.SEL = RTC_MODE2_MASK_SEL_OFF_Val;
 }
 
-/* Wait for sync in write operations */
+// Wait for sync in write operations
 inline bool MkrPM::RTCisSyncing()
 {
     return (RTC->MODE2.STATUS.bit.SYNCBUSY);
