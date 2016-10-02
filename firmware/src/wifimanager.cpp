@@ -16,32 +16,40 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define RETRY_ATTEMPTS      3
+#define RETRY_DELAY         1000
+
 #include "wifimanager.h"
 
 WiFiManager::WiFiManager()
 {
-
 }
 
-void WiFiManager::connect(const char *wifiSsid, const char *wifiPsk)
+bool WiFiManager::connect(const char *wifiSsid, const char *wifiPsk)
 {
+    uint8_t attempts = 0;
+
     // check for the presence of the shield
     if (WiFi.status() == WL_NO_SHIELD) {
-        Serial.println("WiFi shield not present");
-        // don't continue:
-        while (true);
+        Serial.println("WiFi shield not present or communication error");
+        return false;
     }
 
     Serial.print("Attempting to connect to SSID: ");
     Serial.println(wifiSsid);
     // attempt to connect to Wifi network:
     while (WiFi.begin(wifiSsid, wifiPsk) != WL_CONNECTED) {
-        Serial.println("Connection failed, trying again in 5s");
-        delay(5000);
+        if (++attempts == RETRY_ATTEMPTS) {
+            Serial.println("Connection failed, retry attempts reached");
+            return false;
+        }
+        Serial.println("Connection failed");
+        delay(RETRY_DELAY);
     }
+
     Serial.println("Connected to wifi");
     printStatus();
-    delay(1000);
+    return true;
 }
 
 void WiFiManager::disconnect()

@@ -22,9 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "wifimanager.h"
 #include "epdstreamer.h"
 #include "localsensor.h"
+#include "mkrpm.h"
 #include "config.h"
-
-#define TRIGGER_IN_PIN          5
 
 #define TCM2_BUSY_PIN       2
 #define TCM2_ENABLE_PIN     3
@@ -35,11 +34,19 @@ WiFiManager wifiManager;
 TCM2 tcm(TCM2_BUSY_PIN, TCM2_ENABLE_PIN, TCM2_SPI_CS);
 EPDStreamer epdStreamer;
 LocalSensor localSensor;
+MkrPM pm;
 
 uint32_t tsNextPoll = 0;
 uint8_t buffer[TCM2_MAX_CHUNK_SIZE];
 uint8_t bufferPtr = 0;
 uint16_t totalBodySize = 0;
+
+void blink()
+{
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(30);
+    digitalWrite(LED_BUILTIN, LOW);
+}
 
 void processBodyChunk(const uint8_t *buffer, uint8_t length)
 {
@@ -95,47 +102,60 @@ void triggerUpdateRequest()
     }
 }
 
-void setup()
+void initPeripherals()
 {
-    // Initialize serial and wait for port to open
-    Serial.begin(115200);
+    tcm.begin();
+    localSensor.begin();
 
     #ifdef DEBUG
-    while (!Serial);
-    #endif
-
-    epdStreamer.setCallbacks(onStreamingStarting, onBodyByteRead, onStreamingCompleted);
-
-    tcm.begin();
-
     char buffer[24];
     tcm.getDeviceInfo((uint8_t *)buffer);
 
     Serial.print("TCM2 getDeviceInfo(): ");
     Serial.println(buffer);
 
-    localSensor.begin();
     localSensor.printData();
-
     localSensor.getDataAsPostPayload(buffer);
     Serial.println(buffer);
+    #endif
+}
 
-    pinMode(TRIGGER_IN_PIN, INPUT_PULLUP);
+void setup()
+{
+    #ifdef DEBUG
+    Serial.begin(115200);
+    while (!Serial);
+    #else
+    USBDevice.detach();
+    #endif
+
+    pinMode(LED_BUILTIN, OUTPUT);
+
+    epdStreamer.setCallbacks(onStreamingStarting, onBodyByteRead, onStreamingCompleted);
+
+    pm.begin();
 }
 
 void loop()
 {
-    if (digitalRead(TRIGGER_IN_PIN) == LOW || millis() > tsNextPoll) {
-        wifiManager.connect(WIFI_SSID, WIFI_PSK);
+    blink();
 
-        if (epdStreamer.connect(SERVER_HOST, SERVER_PORT)) {
-            char buffer[64];
-            localSensor.getDataAsPostPayload(buffer);
-            strcat(buffer, "&id=" MY_AUTHID);
-            epdStreamer.post(SERVER_HOST, SERVER_PATH, buffer);
-        }
+    initPeripherals();
+
+    if (wifiManager.connect(WIFI_SSID, WIFI_PSK)) {
+        triggerUpdateRequest();
 
         wifiManager.disconnect();
-        tsNextPoll = millis() + POLL_PERIOD * 1000;
     }
+
+    Serial.println("Going to sleep");
+    #ifdef DEBUG
+    USBDevice.detach();
+    #endif
+
+    pm.sleepForMinutes(POLL_PERIOD_MINS);
+
+    #ifdef DEBUG
+    USBDevice.attach();
+    #endif
 }
