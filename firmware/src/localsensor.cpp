@@ -27,6 +27,13 @@ LocalSensor::LocalSensor()
 void LocalSensor::begin()
 {
     bme.begin();
+    bme.setOperatingMode(BME280_OPERATINGMODE_FORCED);
+    bme.setOversampling(BME280_OVERSAMPLING_1X, BME280_OVERSAMPLING_1X, BME280_OVERSAMPLING_1X);
+}
+
+void LocalSensor::end()
+{
+    bme.setOperatingMode(BME280_OPERATINGMODE_SLEEP);
 }
 
 void LocalSensor::printData()
@@ -49,6 +56,6 @@ void LocalSensor::getDataAsPostPayload(char *buffer)
     dtostrf(bme.readTemperature(), 4, 2, t);
     dtostrf(bme.readPressure() / 100.0, 4, 2, p);
     dtostrf(bme.readHumidity(), 4, 2, h);
-    
+
     sprintf(buffer, "t=%s&p=%s&h=%s", t, p, h);
 }

@@ -30,6 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define TCM2_SPI_CS         7
 
 
+
 WiFiManager wifiManager;
 TCM2 tcm(TCM2_BUSY_PIN, TCM2_ENABLE_PIN, TCM2_SPI_CS);
 EPDStreamer epdStreamer;
@@ -120,6 +121,12 @@ void initPeripherals()
     #endif
 }
 
+void deinitPeripherals()
+{
+    tcm.end();
+    localSensor.end();
+}
+
 void setup()
 {
     #ifdef DEBUG
@@ -147,6 +154,8 @@ void loop()
 
         wifiManager.disconnect();
     }
+
+    deinitPeripherals();
 
     Serial.println("Going to sleep");
     #ifdef DEBUG

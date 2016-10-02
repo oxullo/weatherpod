@@ -27,6 +27,7 @@ class LocalSensor {
 public:
     LocalSensor();
     void begin();
+    void end();
     void printData();
     void getDataAsPostPayload(char *buffer);
 
