@@ -152,7 +152,7 @@ void loop()
     if (wifiManager.connect(WIFI_SSID, WIFI_PSK)) {
         triggerUpdateRequest();
 
-        wifiManager.disconnect();
+        wifiManager.powerDown();
     }
 
     deinitPeripherals();

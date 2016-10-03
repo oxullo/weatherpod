@@ -26,7 +26,7 @@ public:
     WiFiManager();
 
     bool connect(const char *wifiSsid, const char *wifiPsk);
-    void disconnect();
+    void powerDown();
     void printStatus();
 
 };

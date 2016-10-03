@@ -52,9 +52,9 @@ bool WiFiManager::connect(const char *wifiSsid, const char *wifiPsk)
     return true;
 }
 
-void WiFiManager::disconnect()
+void WiFiManager::powerDown()
 {
-    WiFi.disconnect();
+    WiFi.end();
 }
 
 void WiFiManager::printStatus()
