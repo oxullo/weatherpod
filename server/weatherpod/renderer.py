@@ -49,6 +49,9 @@ class Renderer(object):
         else:
             draw.text((330, 254), u'%s%%' % local_data['h'], fill='#ffffff', font=font_bottom)
 
+        if local_data['bl'] is not None:
+            draw.text((34, 180), u'BL=%dmV' % local_data['bl'], font=font_small)
+
         return im
 
     def test_bitmap(self):

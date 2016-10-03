@@ -51,7 +51,8 @@ class Server(object):
 
         local_data = {'t': self._fetch_number('t'),
                       'p': self._fetch_number('p'),
-                      'h': self._fetch_number('h')}
+                      'h': self._fetch_number('h'),
+                      'bl': self._fetch_number('bl')}
 
         return self._send_image(self._renderer.forecast(current, local_data))
 

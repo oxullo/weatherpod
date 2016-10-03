@@ -23,19 +23,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "epdstreamer.h"
 #include "localsensor.h"
 #include "mkrpm.h"
+#include "batteryprobe.h"
 #include "config.h"
 
 #define TCM2_BUSY_PIN       2
 #define TCM2_ENABLE_PIN     3
 #define TCM2_SPI_CS         7
 
-
+#define BATTERYPROBE_INPUT_PIN      A1
+#define BATTERYPROBE_ENABLE_PIN     1
 
 WiFiManager wifiManager;
 TCM2 tcm(TCM2_BUSY_PIN, TCM2_ENABLE_PIN, TCM2_SPI_CS);
 EPDStreamer epdStreamer;
 LocalSensor localSensor;
 MkrPM pm;
+BatteryProbe batteryProbe(BATTERYPROBE_INPUT_PIN, BATTERYPROBE_ENABLE_PIN);
 
 uint32_t tsNextPoll = 0;
 uint8_t buffer[TCM2_MAX_CHUNK_SIZE];
@@ -96,9 +99,13 @@ void onStreamingCompleted()
 void triggerUpdateRequest()
 {
     if (epdStreamer.connect(SERVER_HOST, SERVER_PORT)) {
-        char buffer[64];
+        char buffer[128];
+        char bmbuffer[16];
+
+        sprintf(bmbuffer, "&bl=%d", batteryProbe.getVoltage());
         localSensor.getDataAsPostPayload(buffer);
         strcat(buffer, "&id=" MY_AUTHID);
+        strcat(buffer, bmbuffer);
         epdStreamer.post(SERVER_HOST, SERVER_PATH, buffer);
     }
 }
