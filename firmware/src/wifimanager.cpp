@@ -25,6 +25,11 @@ WiFiManager::WiFiManager()
 {
 }
 
+void WiFiManager::init()
+{
+    WiFi.init();
+}
+
 bool WiFiManager::connect(const char *wifiSsid, const char *wifiPsk)
 {
     uint8_t attempts = 0;

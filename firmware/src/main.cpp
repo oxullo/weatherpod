@@ -112,6 +112,7 @@ void triggerUpdateRequest()
 
 void initPeripherals()
 {
+    wifiManager.init();
     tcm.begin();
     localSensor.begin();
 
@@ -130,8 +131,17 @@ void initPeripherals()
 
 void deinitPeripherals()
 {
+    wifiManager.powerDown();
     tcm.end();
     localSensor.end();
+}
+
+void displayError()
+{
+    uint8_t data = 7;
+    tcm.imageEraseFrameBuffer();
+    tcm.uploadImageFixVal(&data, 1);
+    tcm.displayUpdate();
 }
 
 void setup()
@@ -156,10 +166,11 @@ void loop()
 
     initPeripherals();
 
-    if (wifiManager.connect(WIFI_SSID, WIFI_PSK)) {
+    if (batteryProbe.getVoltage() > VOLTAGE_THRESHOLD &&
+            wifiManager.connect(WIFI_SSID, WIFI_PSK)) {
         triggerUpdateRequest();
-
-        wifiManager.powerDown();
+    } else {
+        displayError();
     }
 
     deinitPeripherals();

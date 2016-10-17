@@ -7,6 +7,7 @@
 #define SERVER_PORT             5000
 #define SERVER_PATH             "/v1/forecast"
 #define MY_AUTHID               "someid"
-#define POLL_PERIOD_MINS        5
+#define POLL_PERIOD_MINS        10
+#define VOLTAGE_THRESHOLD       3500
 
 #endif
