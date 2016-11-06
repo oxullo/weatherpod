@@ -16,16 +16,19 @@ class Renderer(object):
         self._template = resolve_data_dir(config.get('renderer', 'template'))
         self._test_bitmap = resolve_data_dir(config.get('renderer', 'test_bitmap'))
 
-    def forecast(self, outside_t, min_t, max_t, inside_t, precip_pct, battery_mv):
+    def forecast(self, outside_t, min_t, max_t, inside_t, precip_pct, battery_mv, words):
         im = Image.new('1', size=(400, 300), color=255)
 
         draw = ImageDraw.Draw(im)
         font_big = ImageFont.truetype(self._font, 64)
-        font_half = ImageFont.truetype(self._font, 32)
+        font_half = ImageFont.truetype(self._font, 28)
         font_small = ImageFont.truetype(self._font, 12)
 
         draw.text((20, 10), u'%dºC - %dºC' % (min_t, max_t), font=font_big)
         draw.text((20, 80), u'E:%dºC / I:%dºC PP:%d%%' % (outside_t, inside_t, (precip_pct * 100)), font=font_half)
+
+        draw.text((20, 160), ', '.join(words), font=font_half)
+
         draw.text((20, 266), u'BL=%smV RTS=%s' % (battery_mv, datetime.datetime.now()), font=font_small)
 
         return im

@@ -61,7 +61,8 @@ class Server(object):
                                         max_t=temp_range[1],
                                         inside_t=local_data['t'] if local_data['t'] is not None else '--',
                                         precip_pct=forecast_instance.get_precipitation(),
-                                        battery_mv=local_data['bl'] if local_data['bl'] is not None else 'N/A')
+                                        battery_mv=local_data['bl'] if local_data['bl'] is not None else 'N/A',
+                                        words=forecast_instance.get_wording())
 
         return self._send_image(frame)
 

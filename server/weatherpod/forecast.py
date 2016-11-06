@@ -48,6 +48,30 @@ class Forecast(object):
 
         return min(temps), max(temps)
 
+    def get_wording(self):
+        words = []
+
+        precipitation = self.get_precipitation()
+        if precipitation > 0.3:
+            words.append('Umbrella')
+        elif precipitation > 0:
+            words.append('Rain cover')
+
+        minTemp = self.get_temp_range()[0]
+
+        if minTemp < 0:
+            words.append('Heavy coat')
+        elif minTemp < 10:
+            words.append('Coat')
+        elif minTemp < 20:
+            words.append('Light coat')
+        elif minTemp < 24:
+            words.append('Sweater')
+        else:
+            words.append('TShirt')
+
+        return words
+
     def _retrieve_from_net(self):
         print('Retrieving forecast for coordinates: %s' % (self._coordinates,))
         forecast = forecastio.load_forecast(self._api_key, self._coordinates[0], self._coordinates[1], units=self._units)
