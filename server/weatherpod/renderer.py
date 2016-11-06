@@ -3,6 +3,7 @@
 
 from __future__ import print_function
 
+import datetime
 from PIL import Image, ImageDraw, ImageFont
 
 from utils import resolve_data_dir
@@ -21,11 +22,11 @@ class Renderer(object):
         draw = ImageDraw.Draw(im)
         font_big = ImageFont.truetype(self._font, 64)
         font_half = ImageFont.truetype(self._font, 32)
-        font_small = ImageFont.truetype(self._font, 24)
+        font_small = ImageFont.truetype(self._font, 12)
 
         draw.text((20, 10), u'%dºC - %dºC' % (min_t, max_t), font=font_big)
         draw.text((20, 80), u'E:%dºC / I:%dºC PP:%d%%' % (outside_t, inside_t, (precip_pct * 100)), font=font_half)
-        draw.text((20, 266), u'BL=%smV' % battery_mv, font=font_small)
+        draw.text((20, 266), u'BL=%smV RTS=%s' % (battery_mv, datetime.datetime.now()), font=font_small)
 
         return im
 
