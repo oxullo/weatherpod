@@ -47,14 +47,23 @@ class Server(object):
         self._check_authid()
 
         forecast_instance = forecast.Forecast(self._config)
-        current = forecast_instance.retrieve().currently()
+        forecast_data = forecast_instance.retrieve()
 
         local_data = {'t': self._fetch_number('t'),
                       'p': self._fetch_number('p'),
                       'h': self._fetch_number('h'),
                       'bl': self._fetch_number('bl')}
 
-        return self._send_image(self._renderer.forecast(current, local_data))
+        temp_range = forecast_instance.get_temp_range()
+
+        frame = self._renderer.forecast(outside_t=forecast_data.currently().temperature,
+                                        min_t=temp_range[0],
+                                        max_t=temp_range[1],
+                                        inside_t=local_data['t'] if local_data['t'] is not None else '--',
+                                        precip_pct=forecast_instance.get_precipitation(),
+                                        battery_mv=local_data['bl'] if local_data['bl'] is not None else 'N/A')
+
+        return self._send_image(frame)
 
     def _get_format(self):
         return self.FORMAT_GFX if request.values.get('fmt') == 'gfx' else self.FORMAT_EPD

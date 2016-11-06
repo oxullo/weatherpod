@@ -34,6 +34,20 @@ class Forecast(object):
 
         return data
 
+    def get_precipitation(self, hours=8):
+        dataPoints = self.retrieve().hourly().data[0:hours]
+
+        chances = [hdata.precipProbability for hdata in dataPoints]
+
+        return max(chances)
+
+    def get_temp_range(self, hours=8):
+        dataPoints = self.retrieve().hourly().data[0:hours]
+
+        temps = [hdata.apparentTemperature for hdata in dataPoints]
+
+        return min(temps), max(temps)
+
     def _retrieve_from_net(self):
         print('Retrieving forecast for coordinates: %s' % (self._coordinates,))
         forecast = forecastio.load_forecast(self._api_key, self._coordinates[0], self._coordinates[1], units=self._units)
